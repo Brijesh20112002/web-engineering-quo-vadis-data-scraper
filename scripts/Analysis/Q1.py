@@ -7,7 +7,7 @@ import nltk
 from keybert import KeyBERT
 
 # Download NLTK tokenizer data
-nltk.download('punkt')
+nltk.download('punkt') # uncomment only the first time
 
 # Initialize KeyBERT model
 kw_model = KeyBERT()
@@ -46,7 +46,6 @@ for idx, row in df.iterrows():
     final_keywords.append(kws)
 
 df['final_keywords'] = final_keywords
-
 # === Step 4: Build topic-year count matrix ===
 year_topic_counts = defaultdict(lambda: defaultdict(int))
 
@@ -57,19 +56,27 @@ for _, row in df.iterrows():
 
 topic_year_df = pd.DataFrame(year_topic_counts).T.fillna(0)
 
-# === Step 5: Limit to top 15 topics by total frequency ===
-top_topics = topic_year_df.sum(axis=1).sort_values(ascending=False).head(15).index
+# === Step 5: Limit to top 20 topics by total frequency ===
+top_topics = topic_year_df.sum(axis=1).sort_values(ascending=False).head(20).index
 topic_year_df = topic_year_df.loc[top_topics]
+#print(topic_year_df)
 
 # === Step 6: Sort columns (years) ===
 topic_year_df = topic_year_df[[2019, 2020, 2021, 2022, 2023, 2024]]
+topic_year_df['Total'] = topic_year_df.sum(axis=1)
+#print(topic_year_df)
 
 # === Step 7: Plot heatmap ===
 plt.figure(figsize=(14, 9))
-sns.heatmap(topic_year_df, annot=True, fmt=".0f", cmap="YlGnBu", linewidths=0.5, linecolor='gray')
-plt.title("Top 15 Research Topics by Year (2019–2024)", fontsize=16)
+sns.heatmap(topic_year_df, annot=True, fmt=".0f", cmap=sns.cubehelix_palette(as_cmap=True), linewidths=0.5, linecolor='gray')
+plt.title("Top 20 Research Topics by Year (2019–2024)", fontsize=16)
 plt.xlabel("Year")
-plt.ylabel("Research Topics (Full Name)")
-plt.xticks(rotation=45)
+plt.ylabel("Research Topics")
+plt.xticks(rotation=0)
 plt.tight_layout()
+plt.yticks(
+    ticks=range(len(topic_year_df.index)), 
+    labels=[label.title() for label in topic_year_df.index], 
+    rotation=0
+)
 plt.show()

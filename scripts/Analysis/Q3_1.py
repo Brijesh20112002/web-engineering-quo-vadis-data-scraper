@@ -1,7 +1,8 @@
 import pandas as pd
 import plotly.express as px
 
-df = pd.read_csv('web_engineering_combined.csv')
+# Load data
+df = pd.read_csv("web_engineering_combined.csv")
 
 df['year'] = pd.to_numeric(df['year'], errors='coerce')
 df['citations'] = pd.to_numeric(df['citations'], errors='coerce')
@@ -34,6 +35,8 @@ fig = px.bar(
     top_articles,
     y='title_trunc',  # shorter titles on y-axis
     x='citations_per_year',
+    color='citations_per_year',
+    color_continuous_scale=px.colors.sequential.Magenta,
     orientation='h',
     hover_name='title',
     hover_data={'citations_per_year': ':.2f', 'year': True, 'authors': True, 'citations': True, 'title_trunc': False},

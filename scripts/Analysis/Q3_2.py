@@ -50,9 +50,11 @@ fig = px.bar(
     x='total_citations',
     y='keyword_trunc',
     orientation='h',
-    title='Top 10 Topics/Areas by Total Citations',
+    title='Top 10 Topics (Areas) by Total Citations',
     labels={'total_citations': 'Total Citations', 'keyword_trunc': 'Topic/Keyword'},
-    hover_data={'keyword': True, 'keyword_trunc': False}  # Show full keyword on hover, hide truncated
+    hover_data={'keyword': True, 'keyword_trunc': False},
+    color='total_citations',
+    color_continuous_scale=px.colors.sequential.Magenta
 )
 
 # Improve layout for readability

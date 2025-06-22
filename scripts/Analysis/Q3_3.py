@@ -43,35 +43,79 @@ fig_authors = px.bar(
     orientation='h',
     title="Top 10 Authors by Total Citations",
     labels={"total_citations": "Total Citations", "truncated": "Author"},
-    hover_data={"author": True, "truncated": False}
+    hover_data={"author": True, "truncated": False},
+    color='total_citations',
+    color_continuous_scale=px.colors.sequential.Magenta
 )
 fig_authors.update_layout(yaxis={'categoryorder': 'total ascending'})
 fig_authors.show()
 
-# --- Citations per Affiliation ---
+
+import pycountry
+from collections import defaultdict
+import pandas as pd
+import plotly.express as px
+
+# Build country names set for filtering
+country_names = {country.name.lower() for country in pycountry.countries}
+country_names.update({'usa', 'uk', 'united states', 'united kingdom'})
+
+# --- Citations and paper titles per affiliation ---
 citations_per_affil = defaultdict(float)
+papers_per_affil = defaultdict(set)  # store paper titles (or IDs)
+
 for _, row in df.iterrows():
     affils = row['affiliation_list']
-    if affils:
-        share = row['citations'] / len(affils)
-        for aff in affils:
-            citations_per_affil[aff] += share
+    
+    if not isinstance(affils, list) or not affils:
+        continue
+    
+    share = row['citations'] / len(affils) if row['citations'] > 0 else 0
+    
+    for aff in affils:
+        clean_aff = aff.lower()
+        if clean_aff in country_names:
+            continue
+        citations_per_affil[aff] += share
+        papers_per_affil[aff].add(row['title'])  # or row['paper_id'] if you prefer
 
-df_affils = pd.DataFrame(list(citations_per_affil.items()), columns=["affiliation", "total_citations"])
-df_affils["total_citations"] = df_affils["total_citations"].round(1)
-df_affils = df_affils.sort_values(by="total_citations", ascending=False).head(10)
-df_affils['truncated'] = df_affils['affiliation'].apply(lambda x: x if len(x) <= 30 else x[:30] + '...')
+# Create DataFrame
+data = []
+for aff, citations in citations_per_affil.items():
+    papers = papers_per_affil[aff]
+    paper_list = '; '.join(list(papers)[:5])  # limit to first 5 to avoid overly long hover text
+    data.append({
+        "Affiliation": aff,
+        "Total Citations": round(citations, 1),
+        "Papers": paper_list + ('...' if len(papers) > 5 else '')
+    })
 
+df_affils = pd.DataFrame(data)
+df_affils = df_affils.sort_values(by="Total Citations", ascending=False).head(10)
+df_affils['Wrapped Affiliation'] = df_affils['Affiliation'].apply(lambda x: wrap_label(x, 30))
+
+# Plot
 fig_affils = px.bar(
-    df_affils,
-    x="total_citations",
-    y="truncated",
+    df_affils[::-1],
+    x="Total Citations",
+    y="Wrapped Affiliation",
     orientation='h',
-    title="Top 10 Affiliations by Total Citations",
-    labels={"total_citations": "Total Citations", "truncated": "Affiliation"},
-    hover_data={"affiliation": True, "truncated": False}
+    title="🏛️ Top 10 Affiliations by Total Citations",
+    labels={"Total Citations": "Total Citations", "Wrapped Affiliation": "Affiliation"},
+    color='Total Citations',
+    color_continuous_scale=px.colors.sequential.Magenta,
+    text="Total Citations",
+    hover_data={"Papers": True, "Total Citations": True, "Wrapped Affiliation": False}
 )
-fig_affils.update_layout(yaxis={'categoryorder': 'total ascending'})
+
+fig_affils.update_layout(
+    xaxis_title="Total Citations",
+    yaxis_title="Affiliation",
+    margin=dict(l=250, r=20, t=50, b=50),
+    height=900
+)
+
+fig_affils.update_traces(textposition='outside')
 fig_affils.show()
 
 # --- Citations per Country (from affiliation strings) ---
@@ -112,7 +156,9 @@ fig_countries = px.bar(
     orientation='h',
     title="Top 10 Countries by Total Citations",
     labels={"total_citations": "Total Citations", "truncated": "Country"},
-    hover_data={"country": True, "truncated": False}
+    hover_data={"country": True, "truncated": False},
+    color='total_citations',
+    color_continuous_scale=px.colors.sequential.Magenta
 )
 fig_countries.update_layout(yaxis={'categoryorder': 'total ascending'})
 fig_countries.show()
